@@ -1,0 +1,6 @@
+machines:
+  b312ec0e:
+    hostname: Tayes-MacBook-Pro.local
+    ip: 172.16.226.204
+    registered_at: '2026-08-10T21:01:00Z'
+    remote_branch: xgd-working-b312ec0e
