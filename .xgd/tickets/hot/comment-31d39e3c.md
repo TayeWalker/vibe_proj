@@ -5,7 +5,7 @@ type: comment
 title: Comment on bug BUG-1
 created_by: xgd
 created_at: '2026-08-10T21:03:31.738038+00:00'
-updated_at: '2026-08-10T21:06:08.020069+00:00'
+updated_at: '2026-08-10T21:07:58.838194+00:00'
 completed_at: null
 last_field_updated: body
 status: null
@@ -170,5 +170,36 @@ Two commands, both idempotent, converging on the state a clean init would have p
 2. Create the three DOC stubs (`architecture_policy`, `security_policy`, `interface_design_policy`) matching `_create_governance_stubs`
 
 Want me to run both? Step 1 pushes a branch to your GitHub repo, so I held off pending your go-ahead. If the SSL error recurs on that push, it confirms the network-interception theory and is worth chasing on the network side rather than in XGD.
+
+<!-- xgd-turn id="7a28cac6-70a7-4175-a92e-bb851d67f89d-user" -->
+
+<!-- xgd-chat role="user" ts="2026-08-10T21:07:58.478758+00:00" -->
+#### You
+but we tried xgd test-workflows in a peer directory ../test and got the same error
+
+```
+((.vibe_proj) ) (base) tayewalker@Tayes-MacBook-Pro test % xgd test-workflows
+▶ xgd 0.15.157+xgd.working.a516f5b0c99e 2026-08-10 13:59:21
+=== xgd test-workflows ===
+Step 0: Checking environment...
+  ✓ Not in a git repo or XGD workspace
+Step 1: Creating test workspace directory...
+  ✓ Created: /Users/tayewalker/coding_projects/test/xgd-test-9c044999
+Step 2: Initializing XGD workspace (organization=xgd-test, --private)...
+  [step2-init] Running: /Users/tayewalker/coding_projects/vibe_proj/.vibe_proj/bin/xgd init --organization xgd-test --private --yes --no-register
+  [step2-init] Exit 1
+  [step2-init] stderr: ▶ xgd 0.15.157+xgd.working.a516f5b0c99e 2026-08-10 13:59:21
+✗ Branch topology setup failed. See messages above.
+◀ xgd 0.15.157+xgd.working.a516f5b0c99e 2026-08-10 13:59:24
+
+  ✗ xgd init failed (exit 1)
+    stderr: ▶ xgd 0.15.157+xgd.working.a516f5b0c99e 2026-08-10 13:59:21
+✗ Branch topology setup failed. See messages above.
+◀ xgd 0.15.157+xgd.working.a516f5b0c99e 2026-08-10 13:59:24
+
+◀ xgd 0.15.157+xgd.working.a516f5b0c99e 2026-08-10 13:59:24
+((.vibe_proj) ) (base) tayewalker@Tayes-MacBook-Pro test %
+
+```
 
 <!-- xgd-chat-end -->
