@@ -6,9 +6,9 @@ title: 'xgd init: transient SSL failure on machine-branch push aborts init, leav
   workspace incomplete'
 created_by: xgd
 created_at: '2026-08-10T21:02:22.149335+00:00'
-updated_at: '2026-08-10T21:05:49.946152+00:00'
+updated_at: '2026-08-10T21:10:14.527807+00:00'
 completed_at: null
-last_field_updated: title
+last_field_updated: body
 status: draft
 fields:
   auto_merge_back: true
@@ -92,3 +92,73 @@ Both target steps are idempotent by design, so this converges on the same state 
 `xgd init` should either retry/soft-fail the machine-branch push (it is the last and least
 critical step) or support resuming an interrupted init rather than refusing on
 already-existing branches. Filed here for the record; the fix belongs in the xgd package.
+
+
+---
+
+## Second, unrelated failure: `xgd test-workflows` in `../test`
+
+Same headline (`✗ Branch topology setup failed`), **different root cause**. These are two
+distinct bugs that happen to share a generic error line.
+
+### Evidence it is not the SSL issue
+
+- The run lasted 3 seconds (13:59:21 → 13:59:24) — too fast to have reached the
+  machine-branch push, which occurs after repo creation and three branch pushes.
+- The leftover workspace `/Users/tayewalker/coding_projects/test/xgd-test-9c044999` has
+  **no remote configured at all** (`git remote -v` is empty), with only the single
+  `Initial XGD workspace setup` commit. Init died at remote-origin setup, well before
+  anything SSL-related.
+
+### Root cause: no access to the hardcoded `xgd-test` GitHub org
+
+`xgd test-workflows` defaults `--organization` to `xgd-test` (`xgd.py:8846`, fallback also at
+`cli/test_workflows_commands.py:688`). `_setup_remote_origin` (`workspace.py:342`) then runs:
+
+```
+gh repo create xgd-test/xgd-test-9c044999 --private
+```
+
+The authenticated user is `TayeWalker`, who is **not a member of that org**:
+- `gh api user/orgs` → empty (no org memberships)
+- `gh api user/memberships/orgs/xgd-test` → 404 Not Found
+- `gh api orgs/xgd-test` → org exists (id 306830183, created 2026-07-19), but
+  `public_members` is empty and `gh repo list xgd-test` shows nothing
+
+So repo creation is denied, `_setup_remote_origin` returns `(False, ...)`, and init returns 1.
+The `xgd-test` org belongs to someone else — the default only works for its owner.
+
+### Why the real error message was invisible
+
+`workspace.py:565` prints the remote-origin result — including the `✗` failure text carrying
+the actual `gh` error — via `_glog().output('note', ...)`, which goes to **stdout**. Every
+sibling step in the same function reports its `✗` via `'stderr'` (lines 557, 579, 589, 500,
+510). `test-workflows` surfaced only stderr, so the one message explaining the failure was
+discarded and the user saw nothing but the generic trailer.
+
+This is a real reporting defect independent of the org problem: it makes any remote-origin
+failure undiagnosable from `test-workflows` output.
+
+### Fix
+
+Point the harness at an account the user controls:
+
+```
+xgd test-workflows --organization TayeWalker
+```
+
+`_setup_remote_origin` builds `<organization>/<repo_name>` and passes it to `gh repo create`,
+which accepts a personal account owner, so this creates the test repo under the user's own
+account.
+
+Cleanup: `/Users/tayewalker/coding_projects/test/xgd-test-9c044999` is an orphaned workspace
+from the failed run (no remote, harmless clutter). `test-workflows` generates a fresh
+directory per run and does not clean up after a failed init.
+
+### Upstream follow-ups (XGD tool)
+
+1. Route the `_setup_remote_origin` failure message to `stderr` for consistency with every
+   other step in `_setup_branches_worktrees_and_remote`.
+2. Reconsider defaulting `--organization` to `xgd-test`; a default that only works for one
+   GitHub account makes `test-workflows` fail out of the box for everyone else. Defaulting to
+   the authenticated user's own account would work universally.
