@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(/tmp/**)",
+      "Write(/private/tmp/**)",
+      "Write(.xgd/tmp/**)",
+      "Write(.xgd/_staging/**)"
+    ]
+  }
+}

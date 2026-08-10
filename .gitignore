@@ -1,0 +1,145 @@
+
+# ============================================================================
+# XGD Workspace Files - CRITICAL TRACKING REQUIREMENTS
+# ============================================================================
+#
+# IMPORTANT: .xgd/ state files MUST be tracked in version control
+#
+# Workflow state must match workspace state for rollbacks to work.
+# When reverting code, .xgd/ state must also revert to stay in sync.
+#
+# ONLY IGNORE: Logs, temporary files, transient infrastructure, and
+# derived/aggregated artifacts that are auto-rebuilt on demand
+.xgd/logs/
+.xgd/tmp/
+.xgd/derived-data/
+.xgd/_staging/
+.xgd/_locks/
+#
+# Derived/aggregated artifacts — auto-rebuilt by ticketing/quality tooling.
+# These MUST be ignored: tracking them causes spurious "modified" state
+# in merge worktrees, which makes `git merge` abort with "Your local
+# changes would be overwritten" — silently breaking merge-back.
+.xgd/tickets/hot/index.json
+.xgd/tickets/cold/index.json
+.xgd/tickets/index.json
+.xgd/tickets/*.tmp
+.xgd/tickets/search/
+.xgd/uat_index.json
+.xgd/cache/
+.xgd/claude_pid_tracking.txt
+.xgd/active_chat_session.json
+.xgd/chat_session_buffers/
+
+# Runtime lock files — PID + start time, never committed
+.xgd/workflow.lock
+.xgd/merge.lock
+.xgd/merge-back.lock
+.xgd/working-merge.lock
+.xgd/dashboard_pid
+.xgd/dashboard_url
+.xgd/dispatcher.pid
+.xgd/dispatcher.children
+.xgd/dispatcher.version
+.xgd/dispatcher.modes
+.xgd/regression.pid
+.xgd/regression_schedule.json
+#
+# Machine-local / per-worktree runtime state — differs per machine or
+# worktree by definition, must never ride along on a merge/sync
+.xgd/machine_id
+.xgd/regression.state.json
+.xgd/stats/
+#
+# Editor swap/autosave artifacts
+\#*#
+.#*
+#
+# TRACK EVERYTHING ELSE including:
+#   - .xgd/workflows/ (checkpoints)
+#   - .xgd/artifacts/ (sprint artifacts, quality reports)
+#   - .xgd/config.yaml (project configuration)
+#   - .xgd/machines.yaml (multi-machine registry)
+#   - .xgd/validation-reports/ (validation results)
+#
+# ⚠️  WARNING: Do NOT add patterns like .xgd/ or .xgd/* or .xgd/**
+#             These ignore ALL .xgd files and break git rollback!
+#
+# ============================================================================
+
+# Claude Code — track settings.json (required permissions), ignore local and worktrees
+.claude/settings.local.json
+.claude/worktrees/
+
+# Environment files
+.env
+.env.local
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# ============================================================================
+# Python Artifacts
+# ============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.coverage
+coverage.json
+.pytest_cache/
+htmlcov/
+
+# ============================================================================
+# Swift/Xcode Artifacts
+# ============================================================================
+*.xcresult
+*.profdata
+*.profraw
+*.dSYM
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.moved-aside
+*.xccheckout
+
+# ============================================================================
+# JavaScript/Node Artifacts
+# ============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.eslintcache
+
+# ============================================================================
+# Rust/Cargo Artifacts
+# ============================================================================
+target/
+**/*.rs.bk
+Cargo.lock  # Remove this line if project is a binary/application
+
+# ============================================================================
+# General Build/Test Artifacts
+# ============================================================================
+*.log
+*.tmp
+*.bak*

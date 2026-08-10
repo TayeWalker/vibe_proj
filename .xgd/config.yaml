@@ -1,0 +1,227 @@
+# XGD Configuration
+# This file controls xgd behavior and settings
+
+# Chat provider configuration
+chat:
+  provider: claude  # Options: "chatgpt" or "claude"
+
+# Claude Code CLI configuration
+claude_code:
+  # Paths accessible to interactive Claude sessions (xgd claude).
+  # Project root is always included. Add cross-project or cross-worktree paths here.
+  # Example: ["/Users/me/other-project", "~/.xgd/worktrees/myrepo/branch-abc"]
+  allowed_paths: []
+  sessions:            # Model per session role (planner/builder/assessor/editor)
+    planner:
+      model: opus      # technical_design, generate_intent_plan, generate_stories, generate_review_stories, plan_sprint
+    builder:
+      model: opus      # coding_red, coding_green, fix_quality, fix_quality_batch, fix_review
+    assessor:
+      model: opus      # intent_review, sprint_review, task_review, validate_intent, validate_architecture, validate_intent_capabilities
+    editor:
+      model: opus      # structural validation: edit specs + tests grounded in cumulative intent history; synthesis-heavy
+  rate_limit:
+    calls_per_hour: 9  # Maximum Claude Code calls per hour (9 = ~6.7 min between calls)
+    enabled: false     # Set to true to enable rate limiting
+  timeout: 1800        # Default timeout in seconds (30 minutes)
+  allow_api_key: false # If true, allows ANTHROPIC_API_KEY usage (per-token billing instead of subscription)
+  session_priming_max_attempts: 20  # Factory-level retries when session priming times out (each attempt ~83 min with default timeout/retry settings; 20 ≈ 27.7h)
+  process_restart:     # Subprocess restart recovery configuration
+    initial_delay_minutes: 10     # Base sleep time before first restart attempt
+    max_attempts: 5               # Maximum number of restart attempts before giving up
+    token_limit_fallback_hours: 5 # Fallback wait if reset time cannot be parsed
+    token_limit_jitter_minutes: 3 # Random jitter added to sleep time (avoids thundering herd)
+
+# Quality enforcement settings
+quality:
+  # Minimum code coverage percentage required for tasks to pass
+  # Default: 60.0 (system default from xgd/config/system.yaml)
+  # Set higher for stricter quality enforcement, lower for faster iteration
+  # Examples:
+  #   80.0 - Strict quality for production code
+  #   60.0 - Balanced approach (default)
+  #   50.0 - Rapid prototyping
+  min_coverage_percent: 25.0
+
+# Retry configuration
+retries:
+  max: 3
+
+# Resync configuration (REQ-518)
+# Each `xgd resync run` invocation has a bounded iteration budget. Each
+# iteration is one (apply_pass + iteration_gate) cycle; the gate
+# decrements this counter every time it observes xgd-working has
+# advanced during the run and extends apply_target. Hitting 0 with
+# working still dirty fires break_if and leaves the FSM resumable.
+resync:
+  max_iterations: 100
+
+# Quality check retry configuration
+quality_checks:
+  max_retry_attempts: 5
+  max_attempts_per_phase: 3  # Default if phase_limits not specified
+
+  # Test failure batching
+  # When there are many test failures, show only N failures at a time to avoid overwhelming Claude
+  # Claude will fix these N tests, then workflow loops to show the next batch
+  test_batch_size: 5  # Number of test failures to show per iteration (default: 5)
+  batch_iteration_buffer_percent: 50  # Extra iterations as % of base count (default: 50%)
+
+  # Phase-specific retry limits (optional)
+  # Configure different retry attempts for each quality phase
+  phase_limits:
+    lint: 3       # Attempts for lint fixes
+    build: 3      # Attempts for build fixes
+    tests: 10     # Attempts for test fixes
+    coverage: 10  # Attempts for coverage improvements
+
+  # Phase-specific timeouts in seconds (optional)
+  # Configure different timeouts for Claude invocations per phase
+  phase_timeouts:
+    lint: 300     # 5 minutes for lint fixes
+    build: 600    # 10 minutes for build fixes
+    tests: 900    # 15 minutes for test fixes
+    coverage: 900 # 15 minutes for coverage improvements
+
+# Resource limits configuration (prevents system crashes)
+resource_limits:
+  enabled: true  # Set to false to disable resource monitoring (not recommended)
+
+  # System resource thresholds (auto-detected if not specified)
+  # WARNING: Setting these too low may cause false positives
+  min_free_memory_gb: null  # Minimum free RAM in GB (default: 2.0 or 25% of total RAM)
+  max_load_average: null    # Maximum 5-minute load average (default: CPU cores × 2)
+
+  # Swift/iOS specific limits
+  max_concurrent_simulators: 2  # Maximum iOS Simulators running simultaneously
+
+  # Time limits
+  max_total_retry_hours: 2.0  # Hard stop after this many hours total (across all retries)
+
+# Sprint configuration
+sprint:
+  max_tasks_per_sprint: 5  # Maximum number of tasks for sprint planning (execution will run all tasks regardless)
+  skip_validation: true    # Set to false to enable sprint plan and task prompt validation (costs more tokens)
+
+# Notification configuration
+# Get notified on your phone when workflows need attention
+notifications:
+  enabled: false  # Set to true to enable notifications
+
+  # Notification backends to use (can enable multiple)
+  backends:
+    # - macos   # macOS Notification Center (works when you're at your Mac)
+    - ntfy    # Push notifications to your phone (works anywhere)
+
+  # Which events to notify about
+  events:
+    workflow_failed: true         # Notify when workflow fails
+    choice_point: true            # Notify when workflow needs your input
+    workflow_success: false       # Notify when workflow completes successfully
+    process_dispatched: false     # Notify when dispatcher starts a process (reconcile, develop, resync, regression)
+    process_completed: false      # Notify when a dispatcher process completes successfully
+    process_failed: true          # Notify when a dispatcher process fails (non-zero exit, workflow failure)
+    process_error: true           # Notify when a dispatcher process encounters an unexpected system error
+
+  # macOS notification settings
+  macos:
+    sound: true  # Play sound for high/urgent priority notifications
+
+  # ntfy.sh push notification settings
+  # Requires: Install ntfy app on your phone and subscribe to your topic
+  # iOS: https://apps.apple.com/us/app/ntfy/id1625396347
+  # Android: https://play.google.com/store/apps/details?id=io.heckel.ntfy
+  ntfy:
+    topic: "xgd-notifications"  # Your unique topic name (choose something unique)
+    url: "https://ntfy.sh"      # ntfy server URL
+    tags:
+      - xgd
+      - workflow
+
+# Required project files
+required_files:
+  - README.md
+  - ARCHITECTURE.md
+
+# Ticketing system configuration
+ticketing:
+  root_dir: ".xgd/tickets"           # Root directory for tickets (default: .xgd/tickets)
+  strict_mode: false                # If true, fail when ticketing-owned paths dirty pre-op
+  include_archived_default: false   # Default include_archived for reads
+  lock_timeout_ms: 10000            # Lock acquisition timeout in milliseconds
+  staging_dir: ".xgd/_staging"      # Directory for staging operations
+  locks_dir: ".xgd/_locks"          # Directory for lock files
+  audit_interval_seconds: 3600    # Seconds between background index audit runs
+  commits:
+    enabled: true                   # Whether to auto-commit changes (default MUST be true)
+    message_template: "xgd(ticket): {op} {type} {uid}"  # Git commit message template
+
+# Workflow execution settings
+workflow:
+  min_free_ram_mb: 500  # Minimum free RAM required before executing a workflow step (MB)
+  memory_poll_interval_s: 30  # How often to re-check RAM when stalling (seconds)
+
+# Dispatcher configuration (batch intent processing daemon)
+dispatcher:
+  poll_interval_seconds: 30  # How often to check for queued intents
+  max_unmerged_feature_branches: 8   # Max outstanding feature-branch worktrees before throttling
+  max_concurrent_capacity: 4         # Cost-budget cap for concurrent work (per-kind weights below)
+  # Per-kind cost weights against max_concurrent_capacity. Pinned in
+  # config (not module defaults) so a long-running dispatcher daemon
+  # picks up changes without restart.
+  costs:
+    develop: 1.0
+    reconcile: 0.5
+    auto_merge_back: 0.6
+    regression: 1.0
+  # Regression auto-scheduling: if auto_start is true, xgd dispatcher start will
+  # initialise the regression schedule automatically (overriding any previous schedule).
+  # xgd dispatcher regression --scheduled-time HH:MM also overrides.  Last invocation wins.
+  regression:
+    auto_start: false          # Set to true to auto-schedule regression on dispatcher start
+    scheduled_time: "23:00"   # HH:MM local time for the next regression run
+
+# Deprecated fields - accepted for backward compatibility, values are ignored
+workflow:
+  min_free_ram_mb: 500
+  memory_poll_interval_s: 30
+watchdog:
+  max_fix_cycles: 20
+
+# Merge-back: automatic rebase+FF-push phase at the end of develop/regression/reconciliation (REQ-398)
+merge_back:
+  max_iterations: 5  # Real-fix retries before terminal_failure (contention iterations are free)
+  regression:
+    auto_merge_back: true  # merge_back runs after xgd regression flows
+  reconciliation:
+    auto_merge_back: true  # merge_back runs after reconciliation flows
+
+# Matrix refactor (capability matrix health checks and repair)
+matrix_refactor:
+  min_uats_per_capability: 20   # Minimum UATs per capability (default: 20)
+  max_uats_per_capability: 200  # Maximum UATs per capability (default: 200)
+
+# Dashboard configuration
+dashboard:
+  idle_timeout: NEVER      # Seconds before idle shutdown (NEVER = no timeout)
+  default_port: 8888       # Default port for dashboard server
+  bind_address: "127.0.0.1"  # Address to bind to
+
+# Watchdog configuration (loop invariant enforcement)
+watchdog:
+  # Maximum consecutive fix cycles before watchdog terminates the workflow.
+  # Used by the fix loop watchdog (task 2). Not enforced in task 1.
+  max_fix_cycles: 20
+
+# Workflow runtime configuration
+workflow:
+  min_free_ram_mb: 500        # Minimum free RAM in MB before blocking workflow start
+  memory_poll_interval_s: 30  # How often (seconds) to poll memory availability
+
+# Project-specific reference documents
+# These will be auto-discovered or can be set manually
+project:
+  prd: null           # Product Requirements Document
+  brd: null           # Business Requirements Document
+  architecture: null  # Architecture document
+  dev_model: null     # Development model/workflow document

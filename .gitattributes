@@ -1,0 +1,20 @@
+
+# ============================================================================
+# XGD Managed Project — Merge Drivers
+# ============================================================================
+#
+# XGD_GITATTRIBUTES_MARKER
+#
+# Ticket files: on merge/rebase conflict keep the side whose YAML frontmatter
+# has the more recent ``updated_at`` timestamp. This is critical during
+# caretaker_resync when the same ticket is edited on both main (via reconcile
+# merge-back) and xgd-working (via local edit).
+#
+# The driver is registered in .git/config by ``xgd init``. If it drifts
+# (e.g. the xgd install moves after init — BUG-921), repair it with
+# ``xgd doctor --fix`` rather than re-running ``xgd init``.
+.xgd/tickets/**/*.md merge=xgd-ticket-recent
+
+# Self-rule: if .gitattributes itself conflicts, keep the rebase-target
+# (main) version — it is always the superset of registered drivers.
+.gitattributes merge=ours
